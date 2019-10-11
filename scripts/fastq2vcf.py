@@ -2,7 +2,6 @@
 
 import sys
 import argparse
-print(sys.base_prefix)
 import fastq2matrix as fm
 
 
@@ -17,6 +16,7 @@ def main_gatk(args):
     if not args.prefix:
         args.prefix = args.bam.replace(".bam","")
     fm.run_cmd("gatk HaplotypeCaller -I %(bam)s -R %(ref)s -O %(prefix)s.g.vcf.gz -ERC BP_RESOLUTION" % vars(args))
+    fm.run_cmd("gatk ValidateVariants -V %(prefix)s.g.vcf.gz -gvcf -R %(ref)s && touch %(prefix)s.g.vcf.gz.validated" % vars(args))
 
 def main_all(args):
     main_trim(args)
