@@ -2,6 +2,7 @@
 
 import sys
 import argparse
+print(sys.base_prefix)
 import fastq2matrix as fm
 
 
