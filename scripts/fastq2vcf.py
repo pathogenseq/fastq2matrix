@@ -1,3 +1,4 @@
+#! /usr/bin/env python
 import sys
 import argparse
 import fastq2matrix as fm
@@ -13,7 +14,7 @@ def main_map(args):
 def main_gatk(args):
     if not args.prefix:
         args.prefix = args.bam.replace(".bam","")
-    fm.run_cmd("gatk HaplotypeCaller -I %(bam)s -R %(ref)s -O %(prefix)s -ERC BP_RESOLUTION" % vars(args))
+    fm.run_cmd("gatk HaplotypeCaller -I %(bam)s -R %(ref)s -O %(prefix)s.g.vcf.gz -ERC BP_RESOLUTION" % vars(args))
 
 def main_all(args):
     main_trim(args)
