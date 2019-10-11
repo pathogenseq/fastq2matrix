@@ -1,7 +1,6 @@
 #! /usr/bin/env python
 
 import sys
-print(sys.argv[0])
 import argparse
 import fastq2matrix as fm
 
