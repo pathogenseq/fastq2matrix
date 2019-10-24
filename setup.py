@@ -10,6 +10,8 @@ setuptools.setup(
     long_description="Utilities to get from fastq files to a variant matrix",
     scripts= [
         'scripts/fastq2vcf.py',
+        'scripts/merge_vcfs.py',
+	'scripts/setGT.py'
         ],
 
 )
