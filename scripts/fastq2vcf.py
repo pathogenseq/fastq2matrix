@@ -9,14 +9,17 @@ def main_trim(args):
 	fm.run_cmd("trimmomatic PE %(read1)s %(read2)s -baseout %(prefix)s LEADING:3 TRAILING:3 SLIDINGWINDOW:4:20 MINLEN:36" % vars(args))
 
 def main_map(args):
-	fm.run_cmd("bwa mem -t %(threads)s -R \"@RG\\tID:%(prefix)s\\tSM:%(prefix)s\\tPL:Illumina\" %(ref)s %(prefix)s_1P %(prefix)s_2P | samtools view -@ %(threads)s -b - | samtools sort -@ %(threads)s -o %(prefix)s.bam -" % vars(args))
-	fm.run_cmd("samtools index -@ %(threads)s %(prefix)s.bam" % vars(args))
+	fm.run_cmd("bwa mem -t %(threads)s -R \"@RG\\tID:%(prefix)s\\tSM:%(prefix)s\\tPL:Illumina\" %(ref)s %(prefix)s_1P %(prefix)s_2P | samtools view -@ %(threads)s -b -o %(prefix)s.bam - " % vars(args))
+	fm.run_cmd("gatk MarkDuplicatesSpark -I %(prefix)s.bam -O %(prefix)s.mkdup.bam -M %(prefix)s.marked_dup_metrics.txt --conf 'spark.executor.cores=%(threads)s'" % vars(args))
+	fm.run_cmd("samtools sort -@ %(threads)s -o %(prefix)s.mkdup.sort.bam %(prefix)s.mkdup.bam")
+	fm.run_cmd("samtools index -@ %(threads)s %(prefix)s.mkdup.sort.bam" % vars(args))
 	fm.run_cmd("rm %(prefix)s_1P %(prefix)s_2P %(prefix)s_1U %(prefix)s_2U" % vars(args))
+	fm.run_cmd("rm %(prefix)s.bam* %(prefix)s.mkdup.bam*")
 	if args.bqsr_vcf:
-		fm.run_cmd("gatk BaseRecalibrator -R %(ref)s -I %(prefix)s.bam --known-sites %(bqsr_vcf)s -O %(prefix)s.recal_data.table" % vars(args))
-		fm.run_cmd("gatk ApplyBQSR -R %(ref)s -I %(prefix)s.bam --bqsr-recal-file %(prefix)s.recal_data.table -O %(prefix)s.bqsr.bam" % vars(args))
+		fm.run_cmd("gatk BaseRecalibrator -R %(ref)s -I %(prefix)s.mkdup.sort.bam --known-sites %(bqsr_vcf)s -O %(prefix)s.recal_data.table" % vars(args))
+		fm.run_cmd("gatk ApplyBQSR -R %(ref)s -I %(prefix)s.mkdup.sort.bam --bqsr-recal-file %(prefix)s.recal_data.table -O %(prefix)s.bqsr.bam" % vars(args))
 		fm.run_cmd("samtools index -@ %(threads)s %(prefix)s.bqsr.bam" % vars(args))
-		fm.run_cmd("rm %(prefix)s.bam" % vars(args))
+		fm.run_cmd("rm %(prefix)s.mkdup.sort.bam*" % vars(args))
 
 def main_gatk(args):
 	if not args.prefix:
