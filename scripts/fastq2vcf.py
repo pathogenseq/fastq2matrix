@@ -3,6 +3,7 @@
 import sys
 import argparse
 import fastq2matrix as fm
+import os.path
 
 
 def main_trim(args):
@@ -32,7 +33,7 @@ def main_all(args):
 	files = {f"{args.prefix}.mkdup.sort.bam.bai":1,f"{args.prefix}.bqsr.bam.bai":2,f"{args.prefix}.g.vcf.gz.validated":3}
 	args.step = 0
 	for f in files:
-		if fm.isfile(f): args.step = files[f]
+		if os.path.isfile(f): args.step = files[f]
 	args.bam = args.prefix+".bqsr.bam" if args.bqsr_vcf else args.prefix+".bam"
 
 	if args.redo or args.step<1:
