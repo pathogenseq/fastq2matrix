@@ -33,10 +33,11 @@ def main_all(args):
 	files = {f"{args.prefix}.mkdup.sort.bam.bai":1,f"{args.prefix}.bqsr.bam.bai":2,f"{args.prefix}.g.vcf.gz.validated":3}
 	args.step = 0
 	for f in files:
-		if os.path.isfile(f): args.step = files[f]
-		sys.stderr.write(f"Found {f}\n")
+		if os.path.isfile(f):
+			args.step = files[f]
+			sys.stderr.write(f"Found {f}\n")
 	args.bam = args.prefix+".bqsr.bam" if args.bqsr_vcf else args.prefix+".bam"
-
+	sys.stderr.write(f"Starting at step {args.step}")
 	if args.redo or args.step<1:
 		main_trim(args)
 	if args.redo or args.step<2:
