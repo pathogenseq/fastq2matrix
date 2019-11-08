@@ -39,7 +39,7 @@ def main_all(args):
 		main_trim(args)
 	if args.redo or args.step<2:
 		main_map(args)
-	if args.redo or args.step<3
+	if args.redo or args.step<3:
 		main_gatk(args)
 
 parser = argparse.ArgumentParser(description='fastq2matrix pipeline',formatter_class=argparse.ArgumentDefaultsHelpFormatter)
