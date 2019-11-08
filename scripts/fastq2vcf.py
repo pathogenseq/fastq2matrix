@@ -34,6 +34,7 @@ def main_all(args):
 	args.step = 0
 	for f in files:
 		if os.path.isfile(f): args.step = files[f]
+		sys.stderr.write(f"Found {f}\n")
 	args.bam = args.prefix+".bqsr.bam" if args.bqsr_vcf else args.prefix+".bam"
 
 	if args.redo or args.step<1:
