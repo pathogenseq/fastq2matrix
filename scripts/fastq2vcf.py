@@ -7,7 +7,7 @@ import os.path
 
 
 def main_trim(args):
-	fm.run_cmd("trimmomatic PE %(read1)s %(read2)s -baseout %(prefix)s LEADING:3 TRAILING:3 SLIDINGWINDOW:4:20 MINLEN:36" % vars(args))
+	fm.run_cmd("trimmomatic PE -phred33 %(read1)s %(read2)s -baseout %(prefix)s LEADING:3 TRAILING:3 SLIDINGWINDOW:4:20 MINLEN:36" % vars(args))
 
 def main_map(args):
 	if args.redo or args.step<1:
