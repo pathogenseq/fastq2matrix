@@ -21,8 +21,12 @@ def main(args):
                 FAILED_SAMPLES.write("%s\tno_file\n" % sample)
                 continue
             if nofile(f"{vcf_file}.validated"):
-                FAILED_SAMPLES.write("%s\tno_validation\n" % sample)
-                continue
+                if nofile(f"{vcf_file}.tbi"):
+                    run_cmd(f"tabix {vcf_file}")
+                run_cmd(f"gatk ValidateVariants -R {args.ref} -V {vcf_file} -gvcf && touch {vcf_file}.validated")
+                if nofile(f"{vcf_file}.validated"):
+                    FAILED_SAMPLES.write("%s\tno_validation\n" % sample)
+                    continue
             samples.append(sample)
             O.write("%s\t%s\n" % (sample,vcf_file))
             if nofile(f"{vcf_file}.tbi"):
