@@ -17,6 +17,8 @@ def main(args):
         for line in open(args.sample_file):
             sample = line.rstrip()
             vcf_file = f"{args.vcf_dir}/{sample}{args.vcf_extension}"
+            sys.stderr.write(f"Looking for {vcf_file}\n")
+            # filecheck(vcf_file)
             if args.ignore_missing and nofile(vcf_file):
                 FAILED_SAMPLES.write("%s\tno_file\n" % sample)
                 continue
