@@ -1,6 +1,7 @@
 #! /usr/bin/env python
 
 import sys
+import os
 import argparse
 import subprocess
 from fastq2matrix import run_cmd, nofile, nofolder, vcf_class
