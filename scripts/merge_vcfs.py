@@ -18,7 +18,7 @@ def main(args):
         for line in open(args.sample_file):
             sample = line.rstrip()
             vcf_file = f"{args.vcf_dir}/{sample}{args.vcf_extension}"
-            sys.stderr.write(f"Looking for {vcf_file}\n")
+            sys.stderr.write(f"Looking for {vcf_file}")
             if os.path.isfile(vcf_file):
                 sys.stderr.write("...OK\n")
             else:
