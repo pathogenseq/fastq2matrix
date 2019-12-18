@@ -1,6 +1,7 @@
 #! /usr/bin/env python
 
 import sys
+import os
 import argparse
 import subprocess
 from fastq2matrix import run_cmd, nofile, nofolder, vcf_class
@@ -17,12 +18,23 @@ def main(args):
         for line in open(args.sample_file):
             sample = line.rstrip()
             vcf_file = f"{args.vcf_dir}/{sample}{args.vcf_extension}"
+            sys.stderr.write(f"Looking for {vcf_file}")
+            if os.path.isfile(vcf_file):
+                sys.stderr.write("...OK\n")
+            else:
+                sys.stderr.write("...Not found...skipping\n")
+                continue
+            # filecheck(vcf_file)
             if args.ignore_missing and nofile(vcf_file):
                 FAILED_SAMPLES.write("%s\tno_file\n" % sample)
                 continue
             if nofile(f"{vcf_file}.validated"):
-                FAILED_SAMPLES.write("%s\tno_validation\n" % sample)
-                continue
+                if nofile(f"{vcf_file}.tbi"):
+                    run_cmd(f"tabix {vcf_file}")
+                run_cmd(f"gatk ValidateVariants -R {args.ref} -V {vcf_file} -gvcf && touch {vcf_file}.validated")
+                if nofile(f"{vcf_file}.validated"):
+                    FAILED_SAMPLES.write("%s\tno_validation\n" % sample)
+                    continue
             samples.append(sample)
             O.write("%s\t%s\n" % (sample,vcf_file))
             if nofile(f"{vcf_file}.tbi"):
@@ -44,7 +56,7 @@ parser.add_argument('--sample-file',help='sample file',required=True)
 parser.add_argument('--prefix',help='Prefix for files',required=True)
 parser.add_argument('--ref',help='reference file',required=True)
 parser.add_argument('--vcf-dir',default="./vcf/", type=str, help='VCF firectory')
-parser.add_argument('--vcf-extension',default=".gatk.vcf.gz", type=str, help='VCF extension')
+parser.add_argument('--vcf-extension',default=".g.vcf.gz", type=str, help='VCF extension')
 parser.add_argument('--threads',default=4, type=int, help='Number of threads for parallel operations')
 parser.add_argument('--ignore-missing', action="store_true", help='If this option is set, missing samples are ignored')
 parser.add_argument('--redo',type=str,choices=["dbimport","genotype","filtering","fasta","matrix","pca"])
