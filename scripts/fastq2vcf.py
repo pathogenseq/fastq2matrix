@@ -17,10 +17,12 @@ def main_map(args):
 		fm.run_cmd("samtools index -@ %(threads)s %(prefix)s.mkdup.sort.bam" % vars(args))
 		fm.run_cmd("rm %(prefix)s_1P %(prefix)s_2P %(prefix)s_1U %(prefix)s_2U" % vars(args))
 		fm.run_cmd("rm %(prefix)s.bam* %(prefix)s.mkdup.bam*" % vars(args))
+		fm.run_cmd("samtools flagstat -@ %(threads)s %(prefix)s.mkdup.sort.bam > %(prefix)s.mkdup.sort.bamstats" % vars(args))
 	if args.bqsr_vcf and (args.redo or args.step<2):
 		fm.run_cmd("gatk BaseRecalibrator -R %(ref)s -I %(prefix)s.mkdup.sort.bam --known-sites %(bqsr_vcf)s -O %(prefix)s.recal_data.table" % vars(args))
 		fm.run_cmd("gatk ApplyBQSR -R %(ref)s -I %(prefix)s.mkdup.sort.bam --bqsr-recal-file %(prefix)s.recal_data.table -O %(prefix)s.bqsr.bam" % vars(args))
 		fm.run_cmd("samtools index -@ %(threads)s %(prefix)s.bqsr.bam" % vars(args))
+		fm.run_cmd("samtools flagstat -@ %(threads)s %(prefix)s.bqsr.bam > %(prefix)s.bqsr.bamstats" % vars(args))
 		fm.run_cmd("rm %(prefix)s.mkdup.sort.bam*" % vars(args))
 
 def main_gatk(args):
