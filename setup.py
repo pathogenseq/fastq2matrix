@@ -11,7 +11,8 @@ setuptools.setup(
     scripts= [
         'scripts/fastq2vcf.py',
         'scripts/merge_vcfs.py',
-	'scripts/setGT.py'
+        'scripts/setGT.py',
+        'scripts/vcf2fasta.py'
         ],
 
 )
