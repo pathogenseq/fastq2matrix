@@ -38,7 +38,7 @@ def main_all(args):
 		if os.path.isfile(f):
 			args.step = files[f]
 			sys.stderr.write(f"Found {f}\n")
-	args.bam = args.prefix+".bqsr.bam" if args.bqsr_vcf else args.prefix+".bam"
+	args.bam = args.prefix+".bqsr.bam" if args.bqsr_vcf else args.prefix+".mkdup.sort.bam"
 	sys.stderr.write(f"Starting at step {args.step+1}")
 	if args.redo or args.step<1:
 		main_trim(args)
