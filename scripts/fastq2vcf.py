@@ -45,6 +45,7 @@ def main_all(args):
 	if args.redo or args.step<2:
 		main_map(args)
 	if args.redo or args.step<3:
+		sys.stderr.write("Using %(bam)s as the bam file" % vars(args))
 		main_gatk(args)
 
 parser = argparse.ArgumentParser(description='fastq2matrix pipeline',formatter_class=argparse.ArgumentDefaultsHelpFormatter)
