@@ -47,7 +47,7 @@ def main(args):
     if nofile("%s.fai" % args.ref.replace(".fasta","").replace(".fa","")):
         run_cmd("samtools faidx %(ref)s" % params)
     if nofolder("%(prefix)s_genomics_db" % params) or stages[args.redo]<=1:
-        run_cmd("cut -f1 %(ref)s > intervals.list" % params)
+        run_cmd("cut -f1 %(ref)s.fai > intervals.list" % params)
         run_cmd("gatk GenomicsDBImport --genomicsdb-workspace-path %(prefix)s_genomics_db -L intervals.list --sample-name-map %(map_file)s --reader-threads %(threads)s --batch-size 500" % params, verbose=2)
     if nofile("%(prefix)s.raw.vcf.gz" % params) or stages[args.redo]<=2:
         run_cmd("gatk --java-options \"-Xmx40g\" GenotypeGVCFs -R %(ref)s -V gendb://%(prefix)s_genomics_db -O %(prefix)s.raw.vcf.gz" % params, verbose=2)
