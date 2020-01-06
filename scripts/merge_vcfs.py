@@ -4,7 +4,7 @@ import sys
 import os
 import argparse
 import subprocess
-from fastq2matrix import run_cmd, nofile, nofolder, vcf_class
+from fastq2matrix import run_cmd, nofile, nofolder, vcf_class, get_contigs_from_fai
 
 
 def main(args):
@@ -47,7 +47,9 @@ def main(args):
     if nofile("%s.fai" % args.ref.replace(".fasta","").replace(".fa","")):
         run_cmd("samtools faidx %(ref)s" % params)
     if nofolder("%(prefix)s_genomics_db" % params) or stages[args.redo]<=1:
-        run_cmd("gatk GenomicsDBImport --genomicsdb-workspace-path %(prefix)s_genomics_db -L Chromosome --sample-name-map %(map_file)s --reader-threads %(threads)s --batch-size 500" % params, verbose=2)
+        contigs = get_contigs_from_fai(args.ref+".fai")
+        args.contigs = ",".join(contigs)
+        run_cmd("gatk GenomicsDBImport --genomicsdb-workspace-path %(prefix)s_genomics_db -L %(contigs)s --sample-name-map %(map_file)s --reader-threads %(threads)s --batch-size 500" % params, verbose=2)
     if nofile("%(prefix)s.raw.vcf.gz" % params) or stages[args.redo]<=2:
         run_cmd("gatk --java-options \"-Xmx40g\" GenotypeGVCFs -R %(ref)s -V gendb://%(prefix)s_genomics_db -O %(prefix)s.raw.vcf.gz" % params, verbose=2)
 

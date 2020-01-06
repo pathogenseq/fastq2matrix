@@ -10,6 +10,12 @@ import math
 import re
 rand_generator = random.SystemRandom()
 
+def get_contigs_from_fai(filename):
+    contigs = []
+    for l in open(filename):
+        contigs.append(l.strip().split()[0])
+    return contigs
+
 def debug(x):
     sys.stderr.write("#"*40+"\n")
     sys.stderr.write(x+"\n")
