@@ -21,7 +21,7 @@ def main(args):
                 if alleles[int(row[i][0])]=="*" or alleles[int(row[i][2])]=="*":
                     tmp = list(row[i])
                     tmp[0] = "."
-					tmp[2] = "."
+                    tmp[2] = "."
 
         uniq_mixed_genotypes = set([x for x in re.findall("[0-9]/[0-9]",l) if x[0]!=x[2]])
         if len(uniq_mixed_genotypes)>1:
