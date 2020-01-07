@@ -22,6 +22,7 @@ def main(args):
                     tmp = list(row[i])
                     tmp[0] = "."
                     tmp[2] = "."
+                    row[i]="".join(tmp)
 
         uniq_mixed_genotypes = set([x for x in re.findall("[0-9]/[0-9]",l) if x[0]!=x[2]])
         if len(uniq_mixed_genotypes)>1:
