@@ -4,12 +4,13 @@ import sys
 import os
 import argparse
 import subprocess
-from fastq2matrix import run_cmd, nofile, nofolder, vcf_class, get_contigs_from_fai
+from fastq2matrix import run_cmd, cmd_out, nofile, nofolder, vcf_class, get_contigs_from_fai, get_random_file, filecheck, foldercheck
+import json
 
-
-def main(args):
+def main_import(args):
     FAILED_SAMPLES = open("%s.failed_samples.log" % args.prefix, "w")
-    params = {"threads": args.threads, "prefix": args.prefix, "ref": args.ref, "map_file": f"{args.prefix}.map"}
+    params = vars(args)
+    params["map_file"]= f"{args.prefix}.map"
 
     with open(params["map_file"],"w") as O:
         # Set up list to hold sample names
@@ -39,30 +40,74 @@ def main(args):
             O.write("%s\t%s\n" % (sample,vcf_file))
             if nofile(f"{vcf_file}.tbi"):
                 run_cmd(f"bcftools index --tbi {vcf_file}")
-    stages = {"dbimport":1,"genotype":2,"filtering":3,"fasta":4,"matrix":5,"pca":6}
     # Create .dict file (GATK fasta index) has been created for the reference
     if nofile("%s.dict" % args.ref.replace(".fasta","").replace(".fa","")):
         run_cmd("gatk CreateSequenceDictionary -R %(ref)s" % params)
     # Create .fai file (SAMtools fasta index) has been created for the reference
     if nofile("%s.fai" % args.ref.replace(".fasta","").replace(".fa","")):
         run_cmd("samtools faidx %(ref)s" % params)
-    if nofolder("%(prefix)s_genomics_db" % params) or stages[args.redo]<=1:
-        run_cmd("cut -f1 %(ref)s.fai > intervals.list" % params)
-        run_cmd("gatk GenomicsDBImport --genomicsdb-workspace-path %(prefix)s_genomics_db -L intervals.list --sample-name-map %(map_file)s --reader-threads %(threads)s --batch-size 500" % params, verbose=2)
-    if nofile("%(prefix)s.raw.vcf.gz" % params) or stages[args.redo]<=2:
-        run_cmd("gatk --java-options \"-Xmx40g\" GenotypeGVCFs -R %(ref)s -V gendb://%(prefix)s_genomics_db -O %(prefix)s.raw.vcf.gz" % params, verbose=2)
+
+    window_cmd = "bedtools makewindows -n %(num_genome_chunks)s -g %(ref)s.fai | awk '{print $1\":\"$2+1\"-\"$3\" \"$1\"_\"$2+1\"_\"$3}'" % params
+    if nofile("%(prefix)s.dbconf.json" % params):
+        import_cmd = "gatk GenomicsDBImport --genomicsdb-workspace-path %(prefix)s_{2}_genomics_db -L {1} --sample-name-map %(map_file)s --reader-threads %(threads)s --batch-size 500" % params
+        run_cmd(f"{window_cmd} | parallel --bar -j {args.threads} --col-sep \" \" {import_cmd}", verbose=2)
+        json.dump({"num_genome_chunks":args.num_genome_chunks},open("%(prefix)s.dbconf.json" % params,"w"))
+    else:
+        conf = json.load(open(filecheck(f"{args.prefix}.dbconf.json")))
+        for l in cmd_out(window_cmd):
+            row = l.strip().split()
+            dirname = "%s_%s_genomics_db" % (args.prefix,row[1])
+            sys.stderr.write("Looking for direcotry named %s..." % dirname)
+            foldercheck(dirname)
+            sys.stderr.write("OK\n")
+        import_cmd = "gatk GenomicsDBImport --genomicsdb-update-workspace-path %(prefix)s_{2}_genomics_db -L {1} --sample-name-map %(map_file)s --reader-threads %(threads)s --batch-size 500" % params
+        run_cmd(f"{window_cmd} | parallel --bar -j {args.threads} --col-sep \" \" {import_cmd}", verbose=2)
+
+def main_genotype(args):
+    conf = json.load(open(filecheck(f"{args.prefix}.dbconf.json")))
+    params = vars(args)
+    params["num_genome_chunks"] = conf["num_genome_chunks"]
+    window_cmd = "bedtools makewindows -n %(num_genome_chunks)s -g %(ref)s.fai | awk '{print $1\":\"$2+1\"-\"$3\" \"$1\"_\"$2+1\"_\"$3}'" % params
+    params["window_cmd"] = window_cmd
+    # Check folders exist
+    for l in cmd_out(window_cmd):
+        row = l.strip().split()
+        dirname = "%s_%s_genomics_db" % (args.prefix,row[1])
+        sys.stderr.write("Looking for direcotry named %s..." % dirname)
+        foldercheck(dirname)
+        sys.stderr.write("OK\n")
+
+    genotype_cmd = "gatk --java-options \"-Xmx40g\" GenotypeGVCFs -R %(ref)s -V gendb://%(prefix)s_{2}_genomics_db -O %(prefix)s.{2}.genotyped.vcf.gz" % params
+    run_cmd(f"{window_cmd} | parallel --bar -j {args.threads} --col-sep \" \" {genotype_cmd}",verbose=2)
+    run_cmd("bcftools concat -Oz -o %(prefix)s.genotyped.vcf.gz `%(window_cmd)s | awk '{print \"%(prefix)s.\"$2\".genotyped.vcf.gz\"}'`" % params)
+    run_cmd("rm `%(window_cmd)s | awk '{print \"%(prefix)s.\"$2\".genotyped.vcf.gz*\"}'`" % params)
+
+
 
 parser = argparse.ArgumentParser(description='VCF mergin pipeline',formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-parser.add_argument('--sample-file',help='sample file',required=True)
-parser.add_argument('--prefix',help='Prefix for files',required=True)
-parser.add_argument('--ref',help='reference file',required=True)
-parser.add_argument('--vcf-dir',default="./vcf/", type=str, help='VCF firectory')
-parser.add_argument('--vcf-extension',default=".g.vcf.gz", type=str, help='VCF extension')
-parser.add_argument('--threads',default=4, type=int, help='Number of threads for parallel operations')
-parser.add_argument('--ignore-missing', action="store_true", help='If this option is set, missing samples are ignored')
-parser.add_argument('--redo',type=str,choices=["dbimport","genotype","filtering","fasta","matrix","pca"])
-parser.add_argument('--no-validate',action="store_true",)
-parser.set_defaults(func=main)
+subparsers = parser.add_subparsers(help="Task to perform")
+
+parser_sub = subparsers.add_parser('import', help='Trim reads using trimmomatic', formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+parser_sub.add_argument('--sample-file',help='sample file',required=True)
+parser_sub.add_argument('--prefix',help='Prefix for files',required=True)
+parser_sub.add_argument('--ref',help='reference file',required=True)
+parser_sub.add_argument('--vcf-dir',default="./vcf/", type=str, help='VCF firectory')
+parser_sub.add_argument('--vcf-extension',default=".g.vcf.gz", type=str, help='VCF extension')
+parser_sub.add_argument('--threads',default=4, type=int, help='Number of threads for parallel operations')
+parser_sub.add_argument('--num-genome-chunks',default=20, type=int, help='Number of chunks to divide the genome into')
+parser_sub.add_argument('--ignore-missing', action="store_true", help='If this option is set, missing samples are ignored')
+parser_sub.add_argument('--redo',type=str,choices=["dbimport","genotype","filtering","fasta","matrix","pca"])
+parser_sub.add_argument('--no-validate',action="store_true",)
+parser_sub.set_defaults(func=main_import)
+
+parser_sub = subparsers.add_parser('genotype', help='Trim reads using trimmomatic', formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+parser_sub.add_argument('--prefix',help='Prefix for files',required=True)
+parser_sub.add_argument('--ref',help='reference file',required=True)
+parser_sub.add_argument('--threads',default=4, type=int, help='Number of threads for parallel operations')
+parser_sub.set_defaults(func=main_genotype)
 
 args = parser.parse_args()
-args.func(args)
+if vars(args) == {}:
+    parser.print_help(sys.stderr)
+else:
+    args.func(args)
