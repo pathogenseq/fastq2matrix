@@ -10,6 +10,13 @@ import math
 import re
 rand_generator = random.SystemRandom()
 
+def chunk_reference(ref,n):
+    genome_chunks = []
+    for l in cmd_out(f"bedtools makewindows -n {n} -g {ref}.fai"):
+        row = l.strip().split()
+        genome_chunks.append("%s:%s-%s" % (row[0],row[1],row[2]))
+    return genome_chunks
+
 def get_contigs_from_fai(filename):
     contigs = []
     for l in open(filename):
