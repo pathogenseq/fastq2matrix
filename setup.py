@@ -13,7 +13,8 @@ setuptools.setup(
         'scripts/merge_vcfs.py',
         'scripts/setGT.py',
         'scripts/vcf2fasta.py',
-		'scripts/vcf2dist.py'
+		'scripts/vcf2dist.py',
+        'scripts/filter_merged_vcf.py'
         ],
 
 )
