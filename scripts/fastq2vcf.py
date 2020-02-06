@@ -22,6 +22,8 @@ def main_trim(args):
 
 def main_map(args):
     args.step = get_step_num(args.prefix)
+    if not os.path.isfile(args.ref.replace(".fasta",".fasta.amb")):
+        fm.run_cmd("bwa index %s" % args.ref)
     if "trimmed" in vars(args):
         args.reads = "%(prefix)s_1P %(prefix)s_2P" % vars(args)
     else:
@@ -34,7 +36,6 @@ def main_map(args):
         fm.run_cmd("samtools flagstat -@ %(threads)s %(prefix)s.mkdup.bam > %(prefix)s.mkdup.bamstats" % vars(args))
     if args.bqsr_vcf and (args.redo or args.step<2):
         if not os.path.isfile(args.ref.replace(".fasta",".fasta.fai")):
-            #test
             fm.run_cmd("samtools faidx %s" % args.ref)
         if not os.path.isfile(args.ref.replace(".fasta",".dict")):
             fm.run_cmd("gatk CreateSequenceDictionary -R %s" % args.ref)
