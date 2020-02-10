@@ -9,6 +9,7 @@ from fastq2matrix import run_cmd, nofile, nofolder, vcf_class, get_contigs_from_
 
 def main(args):
     params = {"threads": args.threads, "prefix": args.prefix, "ref": args.ref, "map_file": f"{args.prefix}.map", "merged_file": args.merged_file, "include": args.include_regions, "vqslod": args.vqslod, "miss": args.missing_sample_cutoff, "mix":args.cutoff_mix_GT, "gff_file": args.gff_file}
+        
     if args.include_regions:
         if not os.path.isfile("%(merged_file)s.tbi" % params):
             run_cmd("bcftools index -t %(merged_file)s" % params)
@@ -38,7 +39,7 @@ def main(args):
     run_cmd("bcftools index -t %(prefix)s.vqslod.filt.snps.vcf.gz" % params)
     run_cmd("bcftools index -t %(prefix)s.vqslod.filt.indel.vcf.gz" % params)
     ## Add sample filtering by missing
-    if params["miss"] == 0:
+    if params["miss"] == "0":
         run_cmd("mv %(prefix)s.vqslod.filt.snps.vcf.gz %(prefix)s.miss%(miss)s.vqslod.filt.snps.vcf.gz" % params)
     else:
         run_cmd("plink --vcf %(prefix)s.vqslod.filt.snps.vcf.gz --mind %(miss)s --recode vcf --allow-extra-chr --out %(prefix)s_plink" % params)
