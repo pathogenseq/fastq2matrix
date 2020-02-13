@@ -33,15 +33,7 @@ def main_map(args):
         fm.run_cmd("samtools index -@ %(threads)s %(prefix)s.mkdup.bam" % vars(args))
         fm.run_cmd("samtools flagstat -@ %(threads)s %(prefix)s.mkdup.bam > %(prefix)s.mkdup.bamstats" % vars(args))
     if args.bqsr_vcf and (args.redo or args.step<2):
-        if not os.path.isfile(args.ref.replace(".fasta",".fasta.fai")):
-            fm.run_cmd("samtools faidx %s" % args.ref)
-        if not os.path.isfile(args.ref.replace(".fasta",".dict")):
-            fm.run_cmd("gatk CreateSequenceDictionary -R %s" % args.ref)
-        for s in args.bqsr_vcf.split(","):
-            if not os.path.isfile(s + ".tbi"):
-                fm.run_cmd("bcftools index -t %s" % s)
-        args.bqsr_vcf = " ".join(["--known-sites %s" % s for s in args.bqsr_vcf.split(",")])
-        fm.run_cmd("gatk BaseRecalibrator -R %(ref)s -I %(prefix)s.mkdup.bam %(bqsr_vcf)s -O %(prefix)s.recal_data.table" % vars(args))
+        fm.run_cmd("gatk BaseRecalibrator -R %(ref)s -I %(prefix)s.mkdup.bam --known-sites %(bqsr_vcf)s -O %(prefix)s.recal_data.table" % vars(args))
         fm.run_cmd("gatk ApplyBQSR -R %(ref)s -I %(prefix)s.mkdup.bam --bqsr-recal-file %(prefix)s.recal_data.table -O %(prefix)s.bqsr.bam" % vars(args))
         fm.run_cmd("samtools index -@ %(threads)s %(prefix)s.bqsr.bam" % vars(args))
         fm.run_cmd("samtools flagstat -@ %(threads)s %(prefix)s.bqsr.bam > %(prefix)s.bqsr.bamstats" % vars(args))
@@ -57,7 +49,7 @@ def main_gatk(args):
 
 def main_all(args):
     args.step = get_step_num(args.prefix)
-    args.bam = args.prefix+".bqsr.bam" if args.bqsr_vcf else args.prefix+".mkdup.bam"
+    args.bam = args.prefix+".bqsr.bam" if args.bqsr_vcf else args.prefix+".mkdup.sort.bam"
     sys.stderr.write(f"Starting at step {args.step+1}")
     if args.redo or args.step<1:
         main_trim(args)
@@ -76,4 +68,40 @@ parser_sub.add_argument('--read1','-1',help='First read file',required=True)
 parser_sub.add_argument('--read2','-2',help='Second read file',required=True)
 parser_sub.add_argument('--prefix','-p',help='Sample prefix for all results generated',required=True)
 parser_sub.add_argument('--ref','-r',help='Second read file',required=True)
-parser_sub.add_argument('--threads','-t',default=4,help='Number of threads'
+parser_sub.add_argument('--threads','-t',default=4,help='Number of threads')
+parser_sub.add_argument('--bqsr-vcf','-q',help='VCF file used for bqsr')
+parser_sub.add_argument('--erc',default="GVCF", choices=["GVCF","BP_RESOLUTION"], help='Choose ERC type on GATK')
+parser_sub.add_argument('--redo',action="store_true",help='Redo everything')
+parser_sub.set_defaults(func=main_all)
+
+parser_sub = subparsers.add_parser('trim', help='Trim reads using trimmomatic', formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+parser_sub.add_argument('--prefix','-p',help='Sample prefix for all results generated',required=True)
+parser_sub.set_defaults(func=main_trim)
+
+parser_sub = subparsers.add_parser('map', help='Trim reads using trimmomatic', formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+parser_sub.add_argument('--read1','-1',help='First read file',required=True)
+parser_sub.add_argument('--read2','-2',help='Second read file',required=True)
+parser_sub.add_argument('--prefix','-p',help='Sample prefix for all results generated',required=True)
+parser_sub.add_argument('--ref','-r',help='Second read file',required=True)
+parser_sub.add_argument('--threads','-t',default=4,help='Number of threads')
+parser_sub.add_argument('--bqsr-vcf','-q',help='VCF file used for bqsr')
+parser_sub.add_argument('--redo',action="store_true",help='Redo everything')
+parser_sub.set_defaults(func=main_map)
+
+parser_sub = subparsers.add_parser('gatk', help='Trim reads using trimmomatic', formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+parser_sub.add_argument('--bam','-b',help='First read file',required=True)
+parser_sub.add_argument('--ref','-r',help='Second read file',required=True)
+parser_sub.add_argument('--prefix','-p',help='Sample prefix for all results generated')
+parser_sub.add_argument('--erc',default="GVCF", choices=["GVCF","BP_RESOLUTION"], help='Choose ERC type on GATK')
+parser_sub.add_argument('--threads','-t',default=4,help='Number of threads')
+
+parser_sub.set_defaults(func=main_gatk)
+
+
+
+
+args = parser.parse_args()
+if vars(args) == {}:
+    parser.print_help(sys.stderr)
+else:
+    args.func(args)
