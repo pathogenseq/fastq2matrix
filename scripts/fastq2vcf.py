@@ -49,7 +49,7 @@ def main_gatk(args):
 
 def main_all(args):
     args.step = get_step_num(args.prefix)
-    args.bam = args.prefix+".bqsr.bam" if args.bqsr_vcf else args.prefix+".mkdup.sort.bam"
+    args.bam = args.prefix+".bqsr.bam" if args.bqsr_vcf else args.prefix+".mkdup.bam"
     sys.stderr.write(f"Starting at step {args.step+1}")
     if args.redo or args.step<1:
         main_trim(args)
