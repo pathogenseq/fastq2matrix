@@ -78,4 +78,4 @@ parser_sub.add_argument('--read1','-1',help='First read file',required=True)
 parser_sub.add_argument('--read2','-2',help='Second read file',required=True)
 parser_sub.add_argument('--prefix','-p',help='Sample prefix for all results generated',required=True)
 parser_sub.add_argument('--ref','-r',help='Second read file',required=True)
-parser_sub.add_argument('--threads','-t',default=4,help='Number of threads'
+parser_sub.add_argument('--threads','-t',default=4,help='Number of threads')
