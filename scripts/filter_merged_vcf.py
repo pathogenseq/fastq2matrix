@@ -9,18 +9,23 @@ from fastq2matrix import run_cmd, nofile, nofolder, vcf_class, get_contigs_from_
 
 def main(args):
     params = {"threads": args.threads, "prefix": args.prefix, "ref": args.ref, "map_file": f"{args.prefix}.map", "merged_file": args.merged_file, "include": args.include_regions, "vqslod": args.vqslod, "miss": args.missing_sample_cutoff, "mix":args.cutoff_mix_GT, "gff_file": args.gff_file}
+        
     if args.include_regions:
-        params["vcf_in"] = params["merged_file"].replace(".raw.vcf.gz",".in.raw.vcf.gz")
+        if not os.path.isfile("%(merged_file)s.tbi" % params):
+            run_cmd("bcftools index -t %(merged_file)s" % params)
+        params["vcf_in"] = params["merged_file"].replace(".genotyped.vcf.gz",".in.genotyped.vcf.gz")
         run_cmd("bcftools view -R %(include)s -O z -o %(vcf_in)s %(merged_file)s" % params)
         run_cmd("bcftools index -t %(vcf_in)s" % params)
         params["merged_file"] = params["vcf_in"]
     if not os.path.isfile(args.ref.replace(".fasta",".dict")):
-        fm.run_cmd("gatk CreateSequenceDictionary -R %s" % args.ref)
+        run_cmd("gatk CreateSequenceDictionary -R %s" % args.ref)
     for s in args.bqsr_vcf.split(","):
         if not os.path.isfile(s + ".tbi"):
-            fm.run_cmd("bcftools index -t %s" % s)
+            run_cmd("bcftools index -t %s" % s)
+    if not os.path.isfile("%(merged_file)s.tbi" % params):
+            run_cmd("bcftools index -t %(merged_file)s" % params)
     params["bqsr_vcf_mer"] = " ".join(["--resource:pf_crosses,known=false,training=true,truth=true,prior=15.0 %s " % s for s in args.bqsr_vcf.split(",")])
-    params["output"] = params["merged_file"].replace(".raw.vcf.gz",".recal")
+    params["output"] = params["merged_file"].replace(".genotyped.vcf.gz",".recal")
     ## Calculating calibration model
     run_cmd("gatk VariantRecalibrator -R %(ref)s -V %(merged_file)s %(bqsr_vcf_mer)s -an QD -an FS -an SOR -an DP --max-gaussians 8 --mq-cap-for-logit-jitter-transform 70 -mode SNP -O %(prefix)s.snps.recal --tranches-file %(prefix)s.snps.tranches --rscript-file %(prefix)s.snps.plots.R" % params)
     run_cmd("gatk VariantRecalibrator -R %(ref)s -V %(merged_file)s %(bqsr_vcf_mer)s -an QD -an DP -an SOR -an FS --max-gaussians 4 --mq-cap-for-logit-jitter-transform 70 -mode INDEL -O %(prefix)s.indel.recal --tranches-file %(prefix)s.indel.tranches --rscript-file %(prefix)s.indel.plots.R" % params)
@@ -34,7 +39,7 @@ def main(args):
     run_cmd("bcftools index -t %(prefix)s.vqslod.filt.snps.vcf.gz" % params)
     run_cmd("bcftools index -t %(prefix)s.vqslod.filt.indel.vcf.gz" % params)
     ## Add sample filtering by missing
-    if params["miss"] == 0:
+    if params["miss"] == "0":
         run_cmd("mv %(prefix)s.vqslod.filt.snps.vcf.gz %(prefix)s.miss%(miss)s.vqslod.filt.snps.vcf.gz" % params)
     else:
         run_cmd("plink --vcf %(prefix)s.vqslod.filt.snps.vcf.gz --mind %(miss)s --recode vcf --allow-extra-chr --out %(prefix)s_plink" % params)

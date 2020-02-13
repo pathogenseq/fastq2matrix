@@ -22,6 +22,8 @@ def main_trim(args):
 
 def main_map(args):
     args.step = get_step_num(args.prefix)
+    if not os.path.isfile(args.ref.replace(".fasta",".fasta.amb")):
+        fm.run_cmd("bwa index %s" % args.ref)
     if "trimmed" in vars(args):
         args.reads = "%(prefix)s_1P %(prefix)s_2P" % vars(args)
     else:
