@@ -4,59 +4,9 @@ import subprocess
 import argparse
 import random
 import os
-from fastq2matrix import filecheck
+from fastq2matrix import filecheck, get_random_file, log, nofile, run_cmd
 rand_generator = random.SystemRandom()
 
-def get_random_file(prefix = None,extension=None):
-	randint = rand_generator.randint(1,999999)
-	if prefix:
-		if extension:
-			return "%s.%s.%s" % (prefix,randint,extension)
-		else:
-			return "%s.%s.txt" % (prefix,randint)
-	else:
-		if extension:
-			return "%s.tmp.%s" % (randint,extension)
-		else:
-			return "%s.tmp.txt" % (randint)
-
-def log(msg,ext=False):
-	sys.stderr.write("\n"+str(msg)+"\n")
-	if ext:
-		exit(1)
-
-def run_cmd(cmd,verbose=1,target=None):
-	"""
-	Wrapper to run a command using subprocess with 3 levels of verbosity and automatic exiting if command failed
-	"""
-	if target and filecheck(target): return True
-	cmd = "set -u pipefail; " + cmd
-	if verbose==2:
-		sys.stderr.write("\nRunning command:\n%s\n" % cmd)
-		stdout = open("/dev/stdout","w")
-		stderr = open("/dev/stderr","w")
-	elif verbose==1:
-		sys.stderr.write("\nRunning command:\n%s\n" % cmd)
-		stdout = open("/dev/null","w")
-		stderr = open("/dev/null","w")
-	else:
-		stdout = open("/dev/null","w")
-		stderr = open("/dev/null","w")
-
-	res = subprocess.call(cmd,shell=True,stderr = stderr,stdout = stdout)
-	stderr.close()
-	if res!=0:
-		print("Command Failed! Please Check!")
-		exit(1)
-
-def nofile(filename):
-	"""
-	Return True if file does not exist
-	"""
-	if not os.path.isfile(filename):
-		return True
-	else:
-		return False
 
 def get_vcf_prefix(filename):
 	if filename[-4:]==".bcf":
@@ -92,7 +42,7 @@ class vcf_class:
 			run_cmd("bcftools query -f '%%CHROM\\t%%POS\\t%%REF[\\t%%IUPACGT]\\n' %(filename)s | tr '|' '/' | sed 's/\.\/\./N/g' >> %(matrix_file)s" % vars(self))
 
 		else:
-			self.matrix_file = self.prefix+".noniupac.vol2.mat"	
+			self.matrix_file = self.prefix+".noniupac.mat"	
 			run_cmd("bcftools query -f '%%CHROM\\t%%POS\\t%%REF[\\t%%TGT]\\n' %(filename)s | sed 's/\.\/./N/g; s/\([ACTG]\)\///g; s/|//g' | sed -r 's/([ACGT])\\1+/\\1/g' > %(matrix_file)s" % vars(self))		
 
 		O = open(self.binary_matrix_file,"w").write("chr\tpos\tref\t%s\n" % ("\t".join(self.samples)))
