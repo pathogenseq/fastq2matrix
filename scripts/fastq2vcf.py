@@ -79,3 +79,13 @@ parser_sub.add_argument('--read2','-2',help='Second read file',required=True)
 parser_sub.add_argument('--prefix','-p',help='Sample prefix for all results generated',required=True)
 parser_sub.add_argument('--ref','-r',help='Second read file',required=True)
 parser_sub.add_argument('--threads','-t',default=4,help='Number of threads')
+parser_sub.add_argument('--bqsr-vcf','-q',help='VCF file used for bqsr')
+parser_sub.add_argument('--erc',default="GVCF", choices=["GVCF","BP_RESOLUTION"], help='Choose ERC type on GATK')
+parser_sub.add_argument('--redo',action="store_true",help='Redo everything')
+parser_sub.set_defaults(func=main_all)
+
+args = parser.parse_args()
+if vars(args) == {}:
+    parser.print_help(sys.stderr)
+else:
+    args.func(args)
