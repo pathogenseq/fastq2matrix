@@ -128,11 +128,8 @@ parser_sub.add_argument('--threads','-t',default=4,help='Number of threads')
 parser_sub.set_defaults(func=main_gatk)
 
 
-
-
 args = parser.parse_args()
 if vars(args) == {}:
     parser.print_help(sys.stderr)
 else:
     args.func(args)
-
