@@ -25,7 +25,7 @@ def main(args):
                     row[i]="".join(tmp)
 
         uniq_mixed_genotypes = set([x for x in re.findall("[0-9]/[0-9]",l) if x[0]!=x[2]])
-        if len(uniq_mixed_genotypes)>1:
+        if len(uniq_mixed_genotypes)>=1:
             for i in range(9,len(row)):
                 if row[i][:3] not in uniq_mixed_genotypes: continue
                 fmt = row[i].split(":")
