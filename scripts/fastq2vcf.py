@@ -48,7 +48,7 @@ def main_map(args):
         for vcf in args.bqsr_vcf.split(","):
             fm.tabix_vcf(vcf)
         args.bqsr_vcf = " ".join(["--known-sites %s" % s for s in args.bqsr_vcf.split(",")])
-        fm.run_cmd("gatk BaseRecalibrator -R %(ref)s -I %(prefix)s.mkdup.bam --known-sites %(bqsr_vcf)s -O %(prefix)s.recal_data.table" % vars(args))
+        fm.run_cmd("gatk BaseRecalibrator -R %(ref)s -I %(prefix)s.mkdup.bam %(bqsr_vcf)s -O %(prefix)s.recal_data.table" % vars(args))
         fm.run_cmd("gatk ApplyBQSR -R %(ref)s -I %(prefix)s.mkdup.bam --bqsr-recal-file %(prefix)s.recal_data.table -O %(prefix)s.bqsr.bam" % vars(args))
         fm.run_cmd("samtools index -@ %(threads)s %(prefix)s.bqsr.bam" % vars(args))
         fm.run_cmd("samtools flagstat -@ %(threads)s %(prefix)s.bqsr.bam > %(prefix)s.bqsr.bamstats" % vars(args))
@@ -66,7 +66,7 @@ def main_all(args):
     fm.create_seq_dict(args.ref)
     fm.bwa_index(args.ref)
     fm.faidx(args.ref)
-    
+
     args.step = get_step_num(args.prefix)
 
     if not args.read2 and not args.single:
