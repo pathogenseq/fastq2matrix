@@ -14,7 +14,7 @@ setuptools.setup(
         'scripts/setGT.py',
         'scripts/vcf2fasta.py',
 		'scripts/vcf2dist.py',
-        'scripts/filter_merged_vcf.py'
-        ],
+        'scripts/filter_merged_vcf.py',
+        'scripts/vcf2matrix.py'],
 
 )
