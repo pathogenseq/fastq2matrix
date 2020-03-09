@@ -143,6 +143,13 @@ def create_seq_dict(ref):
     if nofile("%s.dict" % (ref.replace(".fasta","").replace(".fa",""))):
         run_cmd("gatk CreateSequenceDictionary -R %s" % ref)
 
+def faidx(ref):
+    if nofile("%s.fai" % (ref)):
+        run_cmd("samtools faidx %s" % ref)
+
+def tabix_vcf(vcf):
+    if nofile("%s.tbi" % (vcf)):
+        run_cmd("bcftools index -t %s" % vcf)
 
 def bwa_index(ref):
     """
@@ -186,6 +193,8 @@ def index_bam(bamfile,threads=4,overwrite=False):
             run_cmd(cmd)
         elif os.path.getmtime(bamfile+".bai")<os.path.getmtime(bamfile) or overwrite:
             run_cmd(cmd)
+
+
 
 def index_bcf(bcffile,threads=4,overwrite=False):
     """
