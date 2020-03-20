@@ -7,7 +7,7 @@ import os.path
 
 
 def get_step_num(prefix):
-    files = {f"{prefix}.mkdup.bam.bai":1,f"{prefix}.bqsr.bam.bai":2,f"{prefix}.g.vcf.gz.validated":3}
+    files = {f"{prefix}.mkdup.bam.bai":1,f"{prefix}.bqsr.bam.bai":2,f"{prefix}.g.vcf.gz.validated":3,f"{prefix}.bqsr.cram.crai":4,f"{prefix}.mkdup.cram.crai":4}
     step = 0
     for f in files:
         if os.path.isfile(f):
@@ -25,8 +25,7 @@ def main_trim(args):
 
 def main_map(args):
     args.step = get_step_num(args.prefix)
-    if not os.path.isfile(args.ref.replace(".fasta",".fasta.amb")):
-        fm.run_cmd("bwa index %s" % args.ref)
+
 
 
     if "trimmed" in vars(args) and args.single:
@@ -46,7 +45,10 @@ def main_map(args):
         fm.run_cmd("samtools index -@ %(threads)s %(prefix)s.mkdup.bam" % vars(args))
         fm.run_cmd("samtools flagstat -@ %(threads)s %(prefix)s.mkdup.bam > %(prefix)s.mkdup.bamstats" % vars(args))
     if args.bqsr_vcf and (args.redo or args.step<2):
-        fm.run_cmd("gatk BaseRecalibrator -R %(ref)s -I %(prefix)s.mkdup.bam --known-sites %(bqsr_vcf)s -O %(prefix)s.recal_data.table" % vars(args))
+        for vcf in args.bqsr_vcf.split(","):
+            fm.tabix_vcf(vcf)
+        args.bqsr_vcf = " ".join(["--known-sites %s" % s for s in args.bqsr_vcf.split(",")])
+        fm.run_cmd("gatk BaseRecalibrator -R %(ref)s -I %(prefix)s.mkdup.bam %(bqsr_vcf)s -O %(prefix)s.recal_data.table" % vars(args))
         fm.run_cmd("gatk ApplyBQSR -R %(ref)s -I %(prefix)s.mkdup.bam --bqsr-recal-file %(prefix)s.recal_data.table -O %(prefix)s.bqsr.bam" % vars(args))
         fm.run_cmd("samtools index -@ %(threads)s %(prefix)s.bqsr.bam" % vars(args))
         fm.run_cmd("samtools flagstat -@ %(threads)s %(prefix)s.bqsr.bam > %(prefix)s.bqsr.bamstats" % vars(args))
@@ -59,8 +61,17 @@ def main_gatk(args):
     fm.run_cmd("gatk HaplotypeCaller -I %(bam)s -R %(ref)s -O %(prefix)s.g.vcf.gz -ERC %(erc)s" % vars(args))
     fm.run_cmd("gatk ValidateVariants -V %(prefix)s.g.vcf.gz -gvcf -R %(ref)s && touch %(prefix)s.g.vcf.gz.validated" % vars(args))
 
+def convert_to_cram(bam_file,ref_file,threads):
+    cram_file = bam_file.replace(".bam",".cram")
+    fm.run_cmd("samtools view -@ %s -C %s -o %s -T %s" %(threads,bam_file,cram_file,ref_file))
+    fm.run_cmd("samtools index %s" % cram_file)
+    fm.run_cmd("rm %s %s.bai" % (bam_file,bam_file))
 
 def main_all(args):
+    fm.create_seq_dict(args.ref)
+    fm.bwa_index(args.ref)
+    fm.faidx(args.ref)
+
     args.step = get_step_num(args.prefix)
 
     if not args.read2 and not args.single:
@@ -69,7 +80,7 @@ def main_all(args):
 
     args.bam = args.prefix+".bqsr.bam" if args.bqsr_vcf else args.prefix+".mkdup.bam"
 
-    sys.stderr.write(f"Starting at step {args.step+1}")
+    sys.stderr.write("Starting at step %s\n" % (args.step+1))
     if args.redo or args.step<1:
         main_trim(args)
         args.trimmed = True
@@ -78,7 +89,9 @@ def main_all(args):
     if args.redo or args.step<3:
         sys.stderr.write("Using %(bam)s as the bam file" % vars(args))
         main_gatk(args)
-
+    if args.cram:
+        if args.redo or args.step<4:
+            convert_to_cram(args.bam,args.ref,args.threads)
 
 parser = argparse.ArgumentParser(description='fastq2matrix pipeline',formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 subparsers = parser.add_subparsers(help="Task to perform")
@@ -89,11 +102,11 @@ parser_sub.add_argument('--read2','-2',help='Second read file')
 parser_sub.add_argument('--prefix','-p',help='Sample prefix for all results generated',required=True)
 parser_sub.add_argument('--ref','-r',help='Second read file',required=True)
 parser_sub.add_argument('--threads','-t',default=4,help='Number of threads')
-
 parser_sub.add_argument('--bqsr-vcf','-q',help='VCF file used for bqsr')
 parser_sub.add_argument('--erc',default="GVCF", choices=["GVCF","BP_RESOLUTION"], help='Choose ERC type on GATK')
 parser_sub.add_argument('--redo',action="store_true",help='Redo everything')
 parser_sub.add_argument('--single',action="store_true",help='Redo everything')
+parser_sub.add_argument('--cram',action="store_true",help='Redo everything')
 parser_sub.set_defaults(func=main_all)
 
 parser_sub = subparsers.add_parser('trim', help='Trim reads using trimmomatic', formatter_class=argparse.ArgumentDefaultsHelpFormatter)
