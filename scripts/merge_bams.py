@@ -12,6 +12,9 @@ def main(args):
     elif (not args.prefix and not args.bams) or (args.prefix and args.bams):
         sys.stderr.write("Need wither '--bams' or '--prefix'... Exiting!\n")
         quit()
+    if len(individual_bams)==1:
+        sys.stderr.write("Need more than one bam... Exiting!\n")
+        quit()
     new_bamfile = "%s/%s%s" % (args.dir,new_id,args.suffix)
     tmp_bamfile = fm.get_random_file()
     tmp_file = fm.get_random_file()
