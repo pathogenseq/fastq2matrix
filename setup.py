@@ -15,6 +15,8 @@ setuptools.setup(
         'scripts/vcf2fasta.py',
 		'scripts/vcf2dist.py',
         'scripts/filter_merged_vcf.py',
-        'scripts/vcf2matrix.py'],
+        'scripts/vcf2matrix.py',
+        'scripts/merge_bams.py'
+        ],
 
 )
