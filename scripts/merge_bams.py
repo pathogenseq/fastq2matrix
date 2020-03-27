@@ -24,8 +24,8 @@ def main(args):
                 row[2] = "SM:%s" % new_id
             O.write("%s\n" % "\t".join(row))
 
-    fm.run_cmd("samtools merge -f - %s | samtools reheader -i %s - | samtools addreplacerg - -r 'ID:%s\\tSM:%s\\tPL:Illumina' -o %s" % (
-        " ".join(individual_bams), tmp_file, new_id, new_id, new_bamfile)
+    fm.run_cmd("samtools merge -@ %s -f - %s | samtools reheader -i %s - | samtools addreplacerg -@ %s - -r 'ID:%s\\tSM:%s\\tPL:Illumina' -o %s" % (
+        args.threads," ".join(individual_bams), tmp_file, args.threads,new_id, new_id, new_bamfile)
     )
     fm.run_cmd("samtools index %s" % new_bamfile)
     fm.rm_files([tmp_file,tmp_bamfile])
