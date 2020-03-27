@@ -15,6 +15,8 @@ def main(args):
     if len(individual_bams)==1:
         sys.stderr.write("Need more than one bam... Exiting!\n")
         quit()
+    for bam in individual_bams:
+        fm.filecheck(bam)
     new_bamfile = "%s/%s%s" % (args.dir,new_id,args.suffix)
     tmp_bamfile = fm.get_random_file()
     tmp_file = fm.get_random_file()
