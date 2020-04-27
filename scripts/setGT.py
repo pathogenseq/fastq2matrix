@@ -35,6 +35,7 @@ def main(args):
                 adf = [ad[j]/total_ad for j in range(len(ad))]
                 if max(adf)>=ad_cutoff:
                     new_gt = adf.index(max(adf))
+                    if alleles[new_gt]=="*": new_gt = "."
                     fmt[0] = f"{new_gt}/{new_gt}"
                     something_changed = True
                     row[i] = ":".join(fmt)
