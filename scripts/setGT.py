@@ -6,8 +6,9 @@ import re
 def main(args):
     ad_cutoff = args.fraction
     for l in tqdm(sys.stdin):
+        line = l.strip().replace("|","/")
         something_changed = False
-        row = l.strip().replace("|","/").split()
+        row = line.split()
         if l[0]=="#":
             sys.stdout.write(l)
             continue
@@ -24,7 +25,7 @@ def main(args):
                     tmp[2] = "."
                     row[i]="".join(tmp)
 
-        uniq_mixed_genotypes = set([x for x in re.findall("[0-9][/|][0-9]",l) if x[0]!=x[2]])
+        uniq_mixed_genotypes = set([x for x in re.findall("[0-9][/|][0-9]",line) if x[0]!=x[2]])
         if len(uniq_mixed_genotypes)>=1:
             for i in range(9,len(row)):
                 if row[i][:3] not in uniq_mixed_genotypes: continue
