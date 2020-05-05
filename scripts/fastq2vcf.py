@@ -7,7 +7,7 @@ import os.path
 
 
 def get_step_num(prefix):
-    files = {f"{prefix}.mkdup.bam.bai":1,f"{prefix}.bqsr.bam.bai":2,f"{prefix}.g.vcf.gz.validated":3,f"{prefix}.bqsr.cram.crai":4,f"{prefix}.mkdup.cram.crai":4}
+    files = {f"{prefix}.mkdup.bam.bai":1,f"{prefix}.bqsr.bam.bai":2,f"{prefix}.bqsr.cram.crai":2,f"{prefix}.mkdup.cram.crai":2,f"{prefix}.g.vcf.gz.validated":3}
     step = 0
     for f in files:
         if os.path.isfile(f):
