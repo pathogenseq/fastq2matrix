@@ -6,7 +6,7 @@ import argparse
 def main(args):
     vcf_obj = vcf_class(args.vcf)
     if args.snps:
-        vcf_obj.vcf_to_fasta(args.ref)
+        vcf_obj.vcf_to_fasta(args.ref,nofilt=args.snps_no_filt)
     else:
         args.sample_file = get_random_file()
         open(args.sample_file,"w").write("\n".join(vcf_obj.samples)+"\n")
@@ -20,6 +20,7 @@ parser = argparse.ArgumentParser(description='VCF mergin pipeline',formatter_cla
 parser.add_argument('--vcf',help='sample file',required=True)
 parser.add_argument('--ref',help='reference file',required=True)
 parser.add_argument('--snps',action="store_true",help='Only use SNPs')
+parser.add_argument('--snps-no-filt',action="store_true",help='Only use SNPs')
 parser.add_argument('--threads','-t',default=4,help='Number of threads')
 parser.set_defaults(func=main)
 

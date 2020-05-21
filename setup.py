@@ -16,7 +16,8 @@ setuptools.setup(
 		'scripts/vcf2dist.py',
         'scripts/filter_merged_vcf.py',
         'scripts/vcf2matrix.py',
-        'scripts/merge_bams.py'
+        'scripts/merge_bams.py',
+        'scripts/ancestral_reconstruction.py'
         ],
 
 )

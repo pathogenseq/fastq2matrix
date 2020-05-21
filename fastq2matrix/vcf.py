@@ -16,13 +16,17 @@ class vcf_class:
             self.samples.append(l.rstrip())
         os.remove(self.temp_file)
 
-    def vcf_to_fasta(self,ref_file,threads=4,chunk_size = 50000):
+    def vcf_to_fasta(self,ref_file,threads=4,chunk_size = 50000, nofilt=True):
         self.ref_file = ref_file
-        self.chunk_size = chunk_size
-        self.cmd_split_chr = "bedtools makewindows -g %(ref_file)s.fai -w %(chunk_size)s -s  %(chunk_size)s | awk '{print $1\":\"$2\"-\"$3}'" % vars(self)
+        self.window = chunk_size-1
+        self.step = chunk_size
+        self.cmd_split_chr = "bedtools makewindows -g %(ref_file)s.fai -w %(window)s -s %(step)s | awk '{print $1\":\"$2\"-\"$3}'" % vars(self)
         self.tmp_file = "%s.tmp.txt" % self.prefix
         self.threads = threads
-        cmd = "%(cmd_split_chr)s | parallel -j %(threads)s \"bcftools view  %(filename)s -r {} | bcftools view -V indels | setGT.py | bcftools view -a | bcftools filter -e 'GT=\\\"het\\\"' -S . | bcftools view -i 'F_PASS(GT!=\\\"mis\\\")>0.9' | bcftools view -c 1 | bcftools norm -f %(ref_file)s | bcftools query -f '%%POS[\\t%%IUPACGT]\\n' | sed 's/\.[\/|]\./N/g' |  datamash transpose > %(prefix)s.{}.tmp.txt\"" % vars(self)
+        if nofilt:
+            cmd = "%(cmd_split_chr)s | parallel -j %(threads)s \"bcftools view  %(filename)s -r {} | bcftools view -V indels | bcftools query -f '%%POS[\\t%%IUPACGT]\\n' | sed 's/\.[\/|]\./N/g' |  datamash transpose > %(prefix)s.{}.tmp.txt\"" % vars(self)
+        else:
+            cmd = "%(cmd_split_chr)s | parallel -j %(threads)s \"bcftools view  %(filename)s -r {} | bcftools view -V indels | setGT.py | bcftools view -a | bcftools filter -e 'GT=\\\"het\\\"' -S . | bcftools view -i 'F_PASS(GT!=\\\"mis\\\")>0.9' | bcftools view -c 1 | bcftools norm -f %(ref_file)s | bcftools query -f '%%POS[\\t%%IUPACGT]\\n' | sed 's/\.[\/|]\./N/g' |  datamash transpose > %(prefix)s.{}.tmp.txt\"" % vars(self)
         run_cmd(cmd)
         cmd = "paste `%(cmd_split_chr)s | awk '{print \"%(prefix)s.\"$1\".tmp.txt\"}'` > %(tmp_file)s" % vars(self)
         run_cmd(cmd)
