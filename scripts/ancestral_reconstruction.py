@@ -4,22 +4,22 @@ import ete3
 import subprocess
 from collections import defaultdict
 from tqdm import tqdm
-import pathogenprofiler as pp
+import fastq2matrix as fm
 
 
 def main(args):
 
-    vcf_class = pp.vcf(args.vcf)
+    vcf_class = fm.vcf(args.vcf)
     vcf_positions = vcf_class.get_positions()
 
     if not args.fasta:
         if not args.ref:
             sys.stderr.write("\nERROR: Please supply a reference with --ref\n\n")
             quit()
-        pp.run_cmd("vcf2fasta.py --vcf %(vcf)s --snps --ref %(ref)s --snps-no-filt" % vars(args))
+        fm.run_cmd("vcf2fasta.py --vcf %(vcf)s --snps --ref %(ref)s --snps-no-filt" % vars(args))
         args.fasta = "%s.snps.fa" % vcf_class.prefix
-    if pp.nofile("%s.asr.state" % args.fasta):
-        pp.run_cmd("iqtree -m %(model)s -te %(tree)s -s %(fasta)s -nt AUTO -asr -pre %(fasta)s.asr" % vars(args))
+    if fm.nofile("%s.asr.state" % args.fasta):
+        fm.run_cmd("iqtree -m %(model)s -te %(tree)s -s %(fasta)s -nt AUTO -asr -pre %(fasta)s.asr" % vars(args))
 
     tree = ete3.Tree("%s.asr.treefile" % args.fasta,format=1)
     node_names = set([tree.name] + [n.name.split("/")[0] for n in tree.get_descendants()])
@@ -37,7 +37,7 @@ def main(args):
         if row[0] not in internal_node_names: continue
         states[site][row[0]] = row[2]
 
-    seqs = pp.fasta(args.fasta).fa_dict
+    seqs = fm.fasta(args.fasta).fa_dict
     for site in tqdm(list(states)):
         for sample in seqs:
             states[site][sample] = seqs[sample][site-1]
