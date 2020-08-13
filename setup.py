@@ -18,7 +18,8 @@ setuptools.setup(
         'scripts/vcf2matrix.py',
         'scripts/merge_bams.py',
         'scripts/ancestral_reconstruction.py',
-        'scripts/filter_tb_vcf.py'
+        'scripts/filter_tb_vcf.py',
+        'scripts/extract_bamstats.py'
         ],
 
 )
