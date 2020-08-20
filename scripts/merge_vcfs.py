@@ -84,11 +84,28 @@ def main_genotype(args):
     run_cmd("rm `%(window_cmd)s | awk '{print \"%(prefix)s.\"$2\".genotyped.vcf.gz*\"}'`" % params)
 
 
+def main_all(args):
+    main_import(args)
+    main_genotype(args)
+
 
 parser = argparse.ArgumentParser(description='VCF mergin pipeline',formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 subparsers = parser.add_subparsers(help="Task to perform")
 
 #TODO adjust help notes
+parser_sub = subparsers.add_parser('all', help='Trim reads using trimmomatic', formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+parser_sub.add_argument('--sample-file',help='sample file',required=True)
+parser_sub.add_argument('--prefix',help='Prefix for database name',required=True)
+parser_sub.add_argument('--ref',help='reference file',required=True)
+parser_sub.add_argument('--vcf-dir',default="./vcf/", type=str, help='VCF firectory')
+parser_sub.add_argument('--vcf-extension',default=".g.vcf.gz", type=str, help='VCF extension')
+parser_sub.add_argument('--threads',default=4, type=int, help='Number of threads for parallel operations')
+parser_sub.add_argument('--num-genome-chunks',default=20, type=int, help='Number of chunks to divide the genome into')
+parser_sub.add_argument('--ignore-missing', action="store_true", help='If this option is set, missing samples are ignored')
+parser_sub.add_argument('--no-validate',action="store_true")
+parser_sub.set_defaults(func=main_all)
+
+
 parser_sub = subparsers.add_parser('import', help='Trim reads using trimmomatic', formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 parser_sub.add_argument('--sample-file',help='sample file',required=True)
 parser_sub.add_argument('--prefix',help='Prefix for database name',required=True)
