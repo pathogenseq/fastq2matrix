@@ -8,6 +8,7 @@ import json
 import random
 import math
 import re
+import uuid
 rand_generator = random.SystemRandom()
 
 def chunk_reference(ref,n):
@@ -54,6 +55,7 @@ def add_arguments_to_self(self,args):
     if "kwargs" in args:
         for x in args["kwargs"]:
             vars(self)[x] = args["kwargs"][x]
+    vars(self)["uuid"] = str(uuid.uuid4())
 
 def cmd_out(cmd,verbose=1):
     cmd = "set -u pipefail; " + cmd
