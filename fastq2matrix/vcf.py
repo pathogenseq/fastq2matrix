@@ -1,14 +1,26 @@
 import os
 from .utils import run_cmd, nofile, get_random_file, add_arguments_to_self
 from collections import defaultdict
+import uuid
 
+def get_vcf_prefix(filename):
+    if filename[-4:]==".bcf":
+        return filename[:-4]
+    elif filename[-5:]==".gbcf":
+        return filename[:-5]
+    elif filename[-7:]==".vcf.gz":
+        return filename[:-7]
+    elif filename[-4:]==".vcf":
+        return filename[:-4]
+    else:
+        return filename
 
 class vcf_class:
     def __init__(self,filename,threads=4):
         self.samples = []
         self.filename = filename
         self.threads = threads
-        self.prefix = filename[:-7]
+        self.prefix = get_vcf_prefix(filename)
         if nofile(filename+".csi"):
             run_cmd("bcftools index  %(filename)s" % vars(self))
         self.temp_file = get_random_file()
@@ -42,13 +54,20 @@ class vcf_class:
                 O.write(">%s\n%s\n" % ( s,seq))
         run_cmd("rm %s" % self.tmp_file)
 
-    def vcf_to_matrix(self,):
+    def vcf_to_matrix(self, iupacgt=True):
         self.matrix_file = self.prefix+".mat"
         self.binary_matrix_file = self.prefix+".mat.bin"
-        O = open(self.matrix_file,"w").write("chr\tpos\tref\t%s\n" % ("\t".join(self.samples)))
-        run_cmd("bcftools query -f '%%CHROM\\t%%POS\\t%%REF[\\t%%IUPACGT]\\n' %(filename)s | tr '|' '/' | sed 's/\.\/\./N/g' >> %(matrix_file)s" % vars(self))
+
+        if args.no_iupacgt:
+            self.matrix_file = self.prefix+".noniupac.mat"
+            O = open(self.matrix_file,"w").write("chr\tpos\tref\t%s\n" % ("\t".join(self.samples)))
+            run_cmd("bcftools query -f '%%CHROM\\t%%POS\\t%%REF[\\t%%TGT]\\n' %(filename)s | sed 's/\.\/./N/g; s/\([ACTG]\)\///g; s/|//g' | sed -r 's/([ACGT])\\1+/\\1/g' >> %(matrix_file)s" % vars(self))
+        else:
+            O = open(self.matrix_file,"w").write("chr\tpos\tref\t%s\n" % ("\t".join(self.samples)))
+            run_cmd("bcftools query -f '%%CHROM\\t%%POS\\t%%REF[\\t%%IUPACGT]\\n' %(filename)s | tr '|' '/' | sed 's/\.\/\./N/g' >> %(matrix_file)s" % vars(self))
+
         O = open(self.binary_matrix_file,"w").write("chr\tpos\tref\t%s\n" % ("\t".join(self.samples)))
-        run_cmd("bcftools query -f '%%CHROM\\t%%POS\\t%%REF[\\t%%GT]\\n' %(filename)s | tr '|' '/' | sed 's/\.\/\./N/g' | sed 's/1\/1/1/g' | sed 's/0\/0/0/g' >> %(binary_matrix_file)s" % vars(self))
+        run_cmd("bcftools query -f '%%CHROM\\t%%POS\\t%%REF[\\t%%GT]\\n' %(filename)s | tr '|' '/' | sed 's/\.\/\./N/g' | sed 's/0\/1/0.5/g' | sed 's/1\/1/1/g' | sed 's/0\/0/0/g' >> %(binary_matrix_file)s" % vars(self))
 
     def get_plink_dist(self,pca=True,mds=True):
         self.tempfile = get_random_file(extension=".vcf")
@@ -164,3 +183,28 @@ class vcf_class:
         # import pdb; pdb.set_trace()
 
         return sorted(variant_rows,key=lambda x:x["pos"])
+    def filter_by_af(self,maf,pop_file=None,threads=4):
+        add_arguments_to_self(self,locals())
+
+        tmp_pop_file = self.uuid+".pops"
+        with open(tmp_pop_file,"w") as O:
+            for l in open(pop_file):
+                row = l.strip().split()
+                O.write("%s\t%s\t%s\n" % (row[0],row[0],row[1]))
+
+
+        run_cmd("bcftools norm --threads %(threads)s -m - %(filename)s  | bcftools annotate --threads %(threads)s --set-id '%%POS' -Oz -o %(uuid)s.vcf.gz" % vars(self))
+        # run_cmd("plink --vcf %(uuid)s.vcf.gz --make-bed --allow-extra-chr --keep-allele-order --out %(uuid)s" % vars(self))
+        self.within = "--within %s" % tmp_pop_file if pop_file else ""
+        run_cmd("plink --vcf %(uuid)s.vcf.gz --freq %(within)s  --allow-extra-chr --out %(uuid)s" % vars(self))
+
+        with open(self.uuid+".extract.bed","w") as O:
+            for l in open(self.uuid+".frq.strat"):
+                row = l.strip().split()
+                if row[0]=="CHR": continue
+                if float(row[5])>self.maf:
+                        O.write("%s\t%s\t%s\n" % (row[0],int(row[1])-1,row[1]))
+
+        run_cmd("bcftools view --threads %(threads)s -T %(uuid)s.extract.bed %(filename)s -Oz -o %(prefix)s.pop_maf_filt_%(maf)s.vcf.gz" % vars(self))
+        run_cmd("mv %(uuid)s.frq.strat %(prefix)s.frq.strat" % vars(self))
+        run_cmd("rm %(uuid)s*" % vars(self))

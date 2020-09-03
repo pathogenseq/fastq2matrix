@@ -22,6 +22,7 @@ setuptools.setup(
         'scripts/extract_bamstats.py',
         'scripts/tb_project_summary.py',
         'scripts/correct_tb_csq.py',
+        'scripts/vcf_population_maf_filter.py'
         ],
 
 )
