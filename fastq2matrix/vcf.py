@@ -1,5 +1,6 @@
 import os
-from .utils import run_cmd, nofile, get_random_file
+from .utils import run_cmd, nofile, get_random_file, add_arguments_to_self
+from collections import defaultdict
 
 
 class vcf_class:
@@ -67,3 +68,99 @@ class vcf_class:
 
         run_cmd("rm %(tempfile)s* %(prefix)s.temp* %(prefix)s.pca.log %(prefix)s.pca.nosex" % vars(self))
         return dists
+
+    def load_stats(self,convert=False,ref=None):
+            add_arguments_to_self(self,locals())
+            self.smallest_bin = 1/len(self.samples)
+            self.stats_file = "%s.stats.txt" % self.filename
+            if nofile(self.stats_file):
+                run_cmd("bcftools stats -v -s - %(filename)s > %(stats_file)s" % vars(self))
+
+            results = defaultdict(lambda:defaultdict(dict))
+            for l in open(self.stats_file):
+                row = l.rstrip().split("\t")
+                if l[0]=="#": continue
+                if row[0]=="SN":
+                    results["SN"][row[2][:-1]] = int(row[3])
+                elif row[0]=="AF":
+                    results["AF"]["SNP"][float(row[2])] = int(row[3])
+                    results["AF"]["INDEL"][float(row[2])] = int(row[6])
+                elif row[0]=="QUAL":
+                    results["QUAL"]["SNP"][int(row[2])] = int(row[3])
+                    results["QUAL"]["INDEL"][int(row[2])] = int(row[6])
+                elif row[0]=="IDD":
+                    results["IDD"][int(row[2])] = int(row[3])
+                elif row[0]=="ST":
+                    results["ST"][row[2]] = int(row[3])
+                elif row[0]=="DP":
+                    if row[2][0]==">": continue
+                    results["DP"][int(row[2])] = int(row[3])
+                elif row[0]=="PSC":
+                    results["PSC"][row[2]]["nRefHom"] = int(row[3])
+                    results["PSC"][row[2]]["nNonRefHom"] = int(row[4])
+                    results["PSC"][row[2]]["nHets"] = int(row[5])
+            return results
+
+    def get_variant_data(self,ref,gff):
+        add_arguments_to_self(self,locals())
+
+        if nofile(self.filename+".csq_info.txt"):
+            run_cmd("bcftools view -V indels %(filename)s | bcftools norm -m - -f %(ref)s | bcftools csq -f %(ref)s -g %(gff)s | correct_tb_csq.py | bcftools +fill-tags | bcftools query -f '%%POS\\t%%REF\\t%%ALT\\t%%AF\\t%%AC\\t%%BCSQ\\n' > %(filename)s.csq_info.txt" % vars(self))
+            run_cmd("bcftools view -v indels %(filename)s | bcftools norm -m - -f %(ref)s | bcftools csq -f %(ref)s -g %(gff)s | correct_tb_csq.py | bcftools +fill-tags | bcftools query -f '%%POS\\t%%REF\\t%%ALT\\t%%AF\\t%%AC\\t%%BCSQ\\n' >> %(filename)s.csq_info.txt" % vars(self))
+
+        results = defaultdict(list)
+        for l in open("%(filename)s.csq_info.txt" % vars(self)):
+            print(l)
+            pos,ref,alt,af,ac,csq_str = l.strip().split()
+            alt_af = float(af)
+            alt_ac = int(int(ac)/2)
+            csqs = csq_str.split(",")
+            types = set()
+            changes = set()
+            genes = set()
+            nucleotide_changes = set()
+            pos = int(pos)
+            tmp = {"pos":pos, "ref":ref, "alts":alt, "alt_af":alt_af, "alt_ac":alt_ac}
+            print(l)
+            for i in range(len(csqs)):
+                if csqs[i][0]=="@":
+                    tmp["csq_link"] = csqs[i]
+                elif csqs[i]==".":
+                    types.add("non_coding")
+                    changes.add("NA")
+                    genes.add("NA")
+                    nucleotide_changes.add("NA")
+                else:
+                    csq = csqs[i].split("|")
+                    types.add(csq[0].replace("*",""))
+                    changes.add(csq[5])
+                    genes.add(csq[1])
+                    nucleotide_changes.add(csq[6])
+
+            tmp["types"] = ",".join(types)
+            tmp["changes"] = ",".join(changes)
+            tmp["gene"] = ",".join(genes)
+            tmp["nucleotide_change"] = ",".join(nucleotide_changes)
+            results[pos].append(tmp)
+
+        variant_rows = []
+        for pos in results:
+            for row in results[pos]:
+                if "csq_link" in row:
+                    tmp = [x for x in results[int(row["csq_link"][1:])] if str(pos) in str(x)]
+                    if len(tmp)!=1:
+                        import pdb; pdb.set_trace()
+                    else:
+                        if len(results[int(row["csq_link"][1:])])==1:
+                            variant_rows.append(tmp[0].copy())
+                        t = tmp[0]
+                        t["pos"] = row["pos"]
+                        t["alts"] = row["alts"]
+                        t["alt_af"] = row["alt_af"]
+                        t["alt_ac"] = row["alt_ac"]
+                        # variant_rows.append(t)
+                else:
+                    variant_rows.append(row)
+        # import pdb; pdb.set_trace()
+
+        return sorted(variant_rows,key=lambda x:x["pos"])

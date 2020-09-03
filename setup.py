@@ -19,7 +19,9 @@ setuptools.setup(
         'scripts/merge_bams.py',
         'scripts/ancestral_reconstruction.py',
         'scripts/filter_tb_vcf.py',
-        'scripts/extract_bamstats.py'
+        'scripts/extract_bamstats.py',
+        'scripts/tb_project_summary.py',
+        'scripts/correct_tb_csq.py',
         ],
 
 )

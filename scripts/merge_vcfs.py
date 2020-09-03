@@ -103,6 +103,7 @@ parser_sub.add_argument('--threads',default=4, type=int, help='Number of threads
 parser_sub.add_argument('--num-genome-chunks',default=20, type=int, help='Number of chunks to divide the genome into')
 parser_sub.add_argument('--ignore-missing', action="store_true", help='If this option is set, missing samples are ignored')
 parser_sub.add_argument('--no-validate',action="store_true")
+parser_sub.add_argument('--subfix-vcf', default=date.today().strftime('%Y_%m_%d'), type=str, help='Subfix for genotyped vcf')
 parser_sub.set_defaults(func=main_all)
 
 
