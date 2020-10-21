@@ -2,10 +2,9 @@
 import sys
 import subprocess
 import argparse
-import random
 import os
-from fastq2matrix import vcf_class
-rand_generator = random.SystemRandom()
+from fastq2matrix import vcf_class, nofile
+
 
 def main(args):
 	if nofile(args.vcf): quit("Can't find %s... Exiting!" % args.vcf)

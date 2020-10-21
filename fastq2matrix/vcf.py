@@ -58,7 +58,7 @@ class vcf_class:
         self.matrix_file = self.prefix+".mat"
         self.binary_matrix_file = self.prefix+".mat.bin"
 
-        if args.no_iupacgt:
+        if iupacgt:
             self.matrix_file = self.prefix+".noniupac.mat"
             O = open(self.matrix_file,"w").write("chr\tpos\tref\t%s\n" % ("\t".join(self.samples)))
             run_cmd("bcftools query -f '%%CHROM\\t%%POS\\t%%REF[\\t%%TGT]\\n' %(filename)s | sed 's/\.\/./N/g; s/\([ACTG]\)\///g; s/|//g' | sed -r 's/([ACGT])\\1+/\\1/g' >> %(matrix_file)s" % vars(self))
