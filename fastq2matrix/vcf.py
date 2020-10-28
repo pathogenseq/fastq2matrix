@@ -54,20 +54,20 @@ class vcf_class:
                 O.write(">%s\n%s\n" % ( s,seq))
         run_cmd("rm %s" % self.tmp_file)
 
-    def vcf_to_matrix(self, iupacgt=True):
+    def vcf_to_matrix(self, iupacgt=True, na = "N"):
         self.matrix_file = self.prefix+".mat"
         self.binary_matrix_file = self.prefix+".mat.bin"
-
+        self.na = na
         if iupacgt:
             self.matrix_file = self.prefix+".noniupac.mat"
             O = open(self.matrix_file,"w").write("chr\tpos\tref\t%s\n" % ("\t".join(self.samples)))
-            run_cmd("bcftools query -f '%%CHROM\\t%%POS\\t%%REF[\\t%%TGT]\\n' %(filename)s | sed 's/\.\/./N/g; s/\([ACTG]\)\///g; s/|//g' | sed -r 's/([ACGT])\\1+/\\1/g' >> %(matrix_file)s" % vars(self))
+            run_cmd("bcftools query -f '%%CHROM\\t%%POS\\t%%REF[\\t%%TGT]\\n' %(filename)s | sed 's/\.\/./%(na)s/g; s/\([ACTG]\)\///g; s/|//g' | sed -r 's/([ACGT])\\1+/\\1/g' >> %(matrix_file)s" % vars(self))
         else:
             O = open(self.matrix_file,"w").write("chr\tpos\tref\t%s\n" % ("\t".join(self.samples)))
-            run_cmd("bcftools query -f '%%CHROM\\t%%POS\\t%%REF[\\t%%IUPACGT]\\n' %(filename)s | tr '|' '/' | sed 's/\.\/\./N/g' >> %(matrix_file)s" % vars(self))
+            run_cmd("bcftools query -f '%%CHROM\\t%%POS\\t%%REF[\\t%%IUPACGT]\\n' %(filename)s | tr '|' '/' | sed 's/\.\/\./%(na)s/g' >> %(matrix_file)s" % vars(self))
 
         O = open(self.binary_matrix_file,"w").write("chr\tpos\tref\t%s\n" % ("\t".join(self.samples)))
-        run_cmd("bcftools query -f '%%CHROM\\t%%POS\\t%%REF[\\t%%GT]\\n' %(filename)s | tr '|' '/' | sed 's/\.\/\./N/g' | sed 's/0\/1/0.5/g' | sed 's/1\/1/1/g' | sed 's/0\/0/0/g' >> %(binary_matrix_file)s" % vars(self))
+        run_cmd("bcftools query -f '%%CHROM\\t%%POS\\t%%REF[\\t%%GT]\\n' %(filename)s | tr '|' '/' | sed 's/\.\/\./%(na)s/g' | sed 's/0\/1/0.5/g' | sed 's/[123456789]\/[123456789]/1/g' | sed 's/0\/0/0/g' >> %(binary_matrix_file)s" % vars(self))
 
     def get_plink_dist(self,pca=True,mds=True):
         self.tempfile = get_random_file(extension=".vcf")

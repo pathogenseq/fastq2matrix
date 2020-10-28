@@ -21,6 +21,8 @@ def main(args):
         "bcftools filter -e 'GT=\\\"het\\\"' -S . | "
         "bcftools view -i 'F_PASS(GT!=\\\"mis\\\")>%(site_missing)s' | "
         "bcftools view -c 1 | "
+        "bcftools +fill-tags | "
+        "bcftools view -e 'AF==1' | "
         "bcftools norm -f %(ref)s" % vars(args)
     )
 
