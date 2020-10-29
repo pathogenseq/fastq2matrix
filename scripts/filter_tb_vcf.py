@@ -26,9 +26,13 @@ def main(args):
         "bcftools view -e 'AF==1' | "
         "bcftools norm -f %(ref)s" % vars(args)
     )
+    if args.keep_indels:
+        args.final_file = "%(prefix)s.filtered.vcf.gz" % vars(args)
+    else:
+        args.final_file = "%(prefix)s.filtered_no_indels.vcf.gz" % vars(args)
 
     fm.run_cmd("%(window_cmd)s | parallel -j %(threads)s --col-sep \" \" \"bcftools view  %(filename)s -r {1} | %(filter_cmd)s > %(prefix)s.{2}.tmp.txt\"" % vars(args))
-    fm.run_cmd("bcftools concat -Oz -o %(prefix)s.filtered.vcf.gz `%(window_cmd)s | awk '{print \"%(prefix)s.\"$2\".tmp.txt\"}'`" % vars(args))
+    fm.run_cmd("bcftools concat -Oz -o %(final_file)s `%(window_cmd)s | awk '{print \"%(prefix)s.\"$2\".tmp.txt\"}'`" % vars(args))
     fm.run_cmd("rm `%(window_cmd)s | awk '{print \"%(prefix)s.\"$2\".tmp.txt*\"}'`" % vars(args))
 
 
