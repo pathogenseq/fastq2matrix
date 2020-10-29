@@ -5,7 +5,7 @@ import fastq2matrix as fm
 
 
 def main(args):
-    original_vcf = fm.vcf_class(args.vcf)
+    original_vcf = fm.vcf_class(args.vcf,threads=args.threads)
     args.prefix = original_vcf.prefix
     args.filename = original_vcf.filename
     args.indels_cmd = "" if args.keep_indels else "bcftools view -V indels | "
