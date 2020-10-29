@@ -16,8 +16,8 @@ def main(args):
     args.filter_cmd = (
         "%(indels_cmd)s"
         "%(exclude_cmd)s"
-        "%(annotation_drop)s"
         "setGT.py | "
+        "%(annotation_drop)s"
         "bcftools view -c 1 -a -Ou | "
         "bcftools filter -e 'GT=\\\"het\\\"' -S . | "
         "bcftools view -i 'F_PASS(GT!=\\\"mis\\\")>%(site_missing)s' | "
