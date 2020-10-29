@@ -10,12 +10,13 @@ def main(args):
     args.filename = original_vcf.filename
     args.indels_cmd = "" if args.keep_indels else "bcftools view -V indels | "
     args.exclude_cmd = f"bcftools view -T ^{args.exclude_bed} |"  if args.exclude_bed else ""
-
+    args.annotation_drop = "" if args.keep_genotype_info else "bcftools annotate -x ^FORMAT/GT | "
 
     args.window_cmd = "bedtools makewindows -g %(ref)s.fai -n 20 | awk '{print $1\":\"$2+1\"-\"$3\" \"$1\"_\"$2+1\"_\"$3}'" % vars(args)
     args.filter_cmd = (
         "%(indels_cmd)s"
         "%(exclude_cmd)s"
+        "%(annotation_drop)s"
         "setGT.py | "
         "bcftools view -c 1 -a -Ou | "
         "bcftools filter -e 'GT=\\\"het\\\"' -S . | "
@@ -37,7 +38,8 @@ parser.add_argument('--ref',help='Reference fasta file',required=True)
 parser.add_argument('--site-missing',default=0.9,type=float,help='Minimum non fraction of non-missing data to keep site')
 parser.add_argument('--threads',default=2,type=int,help='Number of threads to use')
 parser.add_argument('--keep-indels',action="store_true",help='Keep in output')
-parser.add_argument('--exclude-bed',help='Keep in output')
+parser.add_argument('--exclude-bed',help='BED file with regions to remove')
+parser.add_argument('--keep-genotype-info',action="store_true",help='Keep information like depth and genotype probabilities for each call')
 parser.set_defaults(func=main)
 args = parser.parse_args()
 args.func(args)
