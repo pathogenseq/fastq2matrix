@@ -1,5 +1,5 @@
 import os
-from .utils import run_cmd, nofile, get_random_file, add_arguments_to_self
+from .utils import run_cmd, nofile, get_random_file, add_arguments_to_self, index_vcf
 from collections import defaultdict
 import uuid
 
@@ -21,8 +21,7 @@ class vcf_class:
         self.filename = filename
         self.threads = threads
         self.prefix = get_vcf_prefix(filename)
-        if nofile(filename+".csi"):
-            run_cmd("bcftools index  %(filename)s" % vars(self))
+        index_vcf(filename,threads=threads)
         self.temp_file = get_random_file()
         run_cmd("bcftools query -l %(filename)s > %(temp_file)s" % vars(self))
         for l in open(self.temp_file):

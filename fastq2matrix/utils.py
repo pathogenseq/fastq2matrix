@@ -198,7 +198,7 @@ def index_bam(bamfile,threads=4,overwrite=False):
 
 
 
-def index_bcf(bcffile,threads=4,overwrite=False):
+def index_vcf(bcffile,threads=4,overwrite=False):
     """
     Indexing a bam file
     """
