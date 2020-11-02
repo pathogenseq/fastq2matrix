@@ -23,7 +23,7 @@ def main(args):
         "bcftools view -i 'F_PASS(GT!=\\\"mis\\\")>%(site_missing)s' | "
         "bcftools view -c 1 | "
         "bcftools +fill-tags | "
-        "bcftools view -e 'AF==1' | "
+        "bcftools view -e 'AF==1 || AF==0' | "
         "bcftools norm -f %(ref)s" % vars(args)
     )
     if args.keep_indels:
