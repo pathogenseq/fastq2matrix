@@ -38,7 +38,7 @@ class vcf_class:
         if nofilt:
             cmd = "%(cmd_split_chr)s | parallel -j %(threads)s \"bcftools view  %(filename)s -r {} | bcftools view -V indels | bcftools query -f '%%POS[\\t%%IUPACGT]\\n' | sed 's/\.[\/|]\./N/g' |  datamash transpose > %(prefix)s.{}.tmp.txt\"" % vars(self)
         else:
-            cmd = "%(cmd_split_chr)s | parallel -j %(threads)s \"bcftools view  %(filename)s -r {} | bcftools view -V indels | setGT.py | bcftools view -a | bcftools filter -e 'GT=\\\"het\\\"' -S . | bcftools view -i 'F_PASS(GT!=\\\"mis\\\")>0.9' | bcftools view -c 1 | bcftools norm -f %(ref_file)s | bcftools query -f '%%POS[\\t%%IUPACGT]\\n' | sed 's/\.[\/|]\./N/g' |  datamash transpose > %(prefix)s.{}.tmp.txt\"" % vars(self)
+            cmd = "%(cmd_split_chr)s | parallel -j %(threads)s \"bcftools view  %(filename)s -r {} | bcftools view -V indels | setGT.py | bcftools view -a | bcftools filter -e 'GT=\\\"het\\\"' -S . | bcftools view -i 'F_PASS(GT!=\\\"mis\\\")>0.9' | bcftools view -c 1 | bcftools +fill-tags | bcftools view -e 'AF==1 || AF==0' | bcftools norm -f %(ref_file)s | bcftools query -f '%%POS[\\t%%IUPACGT]\\n' | sed 's/\.[\/|]\./N/g' |  datamash transpose > %(prefix)s.{}.tmp.txt\"" % vars(self)
         run_cmd(cmd)
         cmd = "paste `%(cmd_split_chr)s | awk '{print \"%(prefix)s.\"$1\".tmp.txt\"}'` > %(tmp_file)s" % vars(self)
         run_cmd(cmd)
@@ -52,6 +52,7 @@ class vcf_class:
                 seq = "".join(row)
                 O.write(">%s\n%s\n" % ( s,seq))
         run_cmd("rm %s" % self.tmp_file)
+        return self.prefix+".snps.fa"
 
     def vcf_to_matrix(self, iupacgt=True, na = "N"):
         self.matrix_file = self.prefix+".mat"
