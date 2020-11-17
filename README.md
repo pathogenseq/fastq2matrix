@@ -4,4 +4,7 @@
 
 ```
 conda install python=3.7 bwa samtools bcftools parallel datamash gatk4=4.1.4.1 delly tqdm trimmomatic minimap2 biopython bedtools r-ggplot2
+
+git clone https://github.com/pathogenseq/fastq2matrix.git
+python setup.py install
 ```
