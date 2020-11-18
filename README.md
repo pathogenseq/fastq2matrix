@@ -12,5 +12,13 @@ git clone https://github.com/pathogenseq/fastq2matrix.git
 python setup.py install
 ```
 
+## Updating your install
+If you are not up to date with the latest version of this package then you can run the following code to update. Just remember to replace `/path/to/fastq2matrix` with the location where you initially cloned the repo.
+```
+cd /path/to/fastq2matrix
+git pull
+python setup.py install
+```
+
 ## More info
 For an example of how to go from fastq files to a multi-sample vcf file check out [this page](https://jodyphelan.gitbook.io/tutorials/ngs/fastq-to-vcf).
