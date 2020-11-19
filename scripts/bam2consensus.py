@@ -62,7 +62,7 @@ parser.add_argument('--bam',type=str,help='Bam file',required=True)
 parser.add_argument('--ref',type=str,help='Reference file',required=True)
 parser.add_argument('--out',type=str,help='Output prefix',required=True)
 parser.add_argument('--bed',type=str,help='Bed file with regions to be extracted (optional 4th column to contain region name which will be present in consensus file)')
-parser.add_argument('--variant-caller',choices=["gatk","freebayes","bcftools"],default="gatk",type=str,help='Variant caller to be used')
+parser.add_argument('--variant-caller',choices=["gatk","freebayes","bcftools"],default="freebayes",type=str,help='Variant caller to be used')
 parser.add_argument('--depth-cutoff',default=10,type=int,help='Sites with less than this cutoff will be marked as missing in the consensus file')
 parser.set_defaults(func=main)
 
