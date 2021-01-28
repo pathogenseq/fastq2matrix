@@ -7,7 +7,7 @@ import subprocess
 from fastq2matrix import run_cmd, nofile, nofolder, vcf_class, get_contigs_from_fai
 
 def main(args):
-    params = {"threads": args.threads, "prefix": args.prefix, "ref": args.ref, "map_file": f"{args.prefix}.map", "merged_file": args.merged_file, "include": args.include_regions, "vqslod": args.vqslod, "miss": args.missing_sample_cutoff, "mix":args.cutoff_mix_GT, "gff_file": args.gff_file}
+    params = {"threads": args.threads, "prefix": args.prefix, "ref": args.ref, "map_file": f"{args.prefix}.map", "merged_file": args.merged_file, "include": args.include_regions, "vqslod": args.vqslod, "miss": args.missing_sample_cutoff, "mix":args.cutoff_mix_GT, "gff_file": args.gff_file, "max_gaussians_snps": args.max_gaussians_snps, "max_gaussians_indels": args.max_gaussians_indels}
     redo = True
     if args.include_regions:
         if not os.path.isfile("%(merged_file)s.tbi" % params):
@@ -29,11 +29,11 @@ def main(args):
     params["output"] = params["merged_file"].replace(".genotyped.vcf.gz",".recal")
     ## Calculating calibration model
     if not os.path.exists("%(prefix)s.snps.recal" % params):
-        run_cmd("gatk VariantRecalibrator -R %(ref)s -V %(merged_file)s %(bqsr_vcf_mer)s -an QD -an FS -an SOR -an DP --max-gaussians 8 --mq-cap-for-logit-jitter-transform 70 -mode SNP -O %(prefix)s.snps.recal --tranches-file %(prefix)s.snps.tranches --rscript-file %(prefix)s.snps.plots.R" % params)
+        run_cmd("gatk VariantRecalibrator -R %(ref)s -V %(merged_file)s %(bqsr_vcf_mer)s -an QD -an FS -an SOR -an DP --max-gaussians %(max_gaussians_snps)s --mq-cap-for-logit-jitter-transform 70 -mode SNP -O %(prefix)s.snps.recal --tranches-file %(prefix)s.snps.tranches --rscript-file %(prefix)s.snps.plots.R" % params)
     else:
         print("Calculating calibration model: DONE")
     if not os.path.exists("%(prefix)s.indel.recal" % params):    
-        run_cmd("gatk VariantRecalibrator -R %(ref)s -V %(merged_file)s %(bqsr_vcf_mer)s -an QD -an DP -an SOR -an FS --max-gaussians 4 --mq-cap-for-logit-jitter-transform 70 -mode INDEL -O %(prefix)s.indel.recal --tranches-file %(prefix)s.indel.tranches --rscript-file %(prefix)s.indel.plots.R" % params)
+        run_cmd("gatk VariantRecalibrator -R %(ref)s -V %(merged_file)s %(bqsr_vcf_mer)s -an QD -an DP -an SOR -an FS --max-gaussians %(max_gaussians_indels)s --mq-cap-for-logit-jitter-transform 70 -mode INDEL -O %(prefix)s.indel.recal --tranches-file %(prefix)s.indel.tranches --rscript-file %(prefix)s.indel.plots.R" % params)
     else:
         print("Calculating calibration model: DONE")
     ## Applying calibration model and obtaining VQSLOD
@@ -98,6 +98,8 @@ parser.add_argument('--threads',default=4, type=int, help='Number of threads for
 parser.add_argument('--vqslod',default=0, type=int, help='VQSLOD filter to exclude SNPs, any SNP wiht VQSLOD< threshold will be removed')
 parser.add_argument('--missing-sample-cutoff', default="0", help='Threshold proportion for sample filtering based on SNP positions missing, samples with proportion of SNPs missing higher than threshold will be excluded')
 parser.add_argument('--cutoff-mix-GT', default="0.8", help='Threshold for heterozygous GT assignment, SNPs with MAF of second allele higher than threshold will be relabelled as heterozygous calls')
+parser.add_argument('--max-gaussians-snps', help='VariantRecalibrator max gaussian for SNPS', default = 8)
+parser.add_argument('--max-gaussians-indels', help='VariantRecalibrator max gaussian for INDELS', default= 4)
 parser.add_argument('--gff-file', help='GFF file for SNP annotation')
 parser.set_defaults(func=main)
 
